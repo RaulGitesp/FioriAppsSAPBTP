@@ -1,0 +1,87 @@
+_schema-version: "3.2"
+ID: demoapp12
+version: 0.0.1
+modules:
+- name: demoapp12-approuter
+  type: approuter.nodejs
+  path: demoapp12-approuter
+  requires:
+  - name: demoapp12_html_repo_runtime
+  - name: uaa_demoapp12
+  - name: demoapp12-dest-srv
+  - name: demoapp12-dest
+    group: destinations
+    properties:
+      forwardAuthToken: false
+      name: ui5
+      url: https://ui5.sap.com
+  parameters:
+    disk-quota: 256M
+    memory: 256M
+- name: demoapp12_ui_deployer
+  type: com.sap.application.content
+  path: .
+  requires:
+  - name: demoapp12_html_repo_host
+    parameters:
+      content-target: true
+  build-parameters:
+    build-result: resources
+    requires:
+    - artifacts:
+      - namespproductos.zip
+      name: namespproductos
+      target-path: resources/
+- name: namespproductos
+  type: html5
+  path: productos
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+resources:
+- name: demoapp12_html_repo_runtime
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-plan: app-runtime
+- name: uaa_demoapp12
+  type: org.cloudfoundry.managed-service
+  parameters:
+    path: ./xs-security.json
+    service: xsuaa
+    service-name: demoapp12-xsuaa-service
+    service-plan: application
+- name: demoapp12_html_repo_host
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-plan: app-host
+- name: demoapp12-dest-srv
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      HTML5Runtime_enabled: false
+      init_data:
+        instance:
+          destinations:
+          - Authentication: NoAuthentication
+            Name: ui5
+            ProxyType: Internet
+            Type: HTTP
+            URL: https://ui5.sap.com
+          existing_destinations_policy: update
+      version: 1.0.0
+    service: destination
+    service-name: demoapp12-dest-srv
+    service-plan: lite
+- name: demoapp12-dest
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: destination
+    service-plan: lite
+parameters:
+  deploy_mode: html5-repo
